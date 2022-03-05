@@ -23,7 +23,7 @@ from structures.structures import CarAgent
 
 # Setup Agent Variables
 AGENT_PARAMETERS = {
-    "X": 60, 
+    "X": 60,
     "Y": 60
 }
 
@@ -46,16 +46,20 @@ def racecar_simulator(genomes, configurations):
     models, agents = list(), list()
 
     # Initialize PyGame utilities for training
-    pygame.init(); screen = pygame.display.set_mode((ENVIRONMENT_PARAMETERS["WIDTH"], ENVIRONMENT_PARAMETERS["HEIGHT"]), 
-                                                     pygame.FULLSCREEN)
-    
+    pygame.init(); screen = pygame.display.set_mode((ENVIRONMENT_PARAMETERS["WIDTH"], ENVIRONMENT_PARAMETERS["HEIGHT"]), pygame.FULLSCREEN)
+
     # Iteratively train agent using Deep RL
     for iteration, genome in genomes:
-        # TODO: What type of neural network is designed here? 
-        # TODO: Can we utilize more advanced neural networks instead?
-        # TODO: What is the tradeoff of using higher-order and/or lower-order networks? 
+        # What type of neural network is designed here?
+        # A feedforward network, which is one in which there are no loops, info always moves forward
+
+        # Can we utilize more advanced neural networks instead?
+        # We almost certainly can, but don't really need to here
+
+        # What is the tradeoff of using higher-order and/or lower-order networks?
+        # The tradeoff with higher-order networks is less speed and more computational cost in exchange for better performance
         model = neat.nn.FeedForwardNetwork.create(genome, configurations)
-        
+
         # Save instantiated models with (re)set genetic training counter
         models.append(model)
         genome.fitness = 0
@@ -71,9 +75,9 @@ def racecar_simulator(genomes, configurations):
     alive_font = pygame.font.SysFont("Arial", 20)
 
     # Read in environment image map
-    environment = pygame.image.load("assets/environments/map01.png").convert()
+    environment = pygame.image.load("assets/environments/map04.png").convert()
 
-    # Iterate generation counter as global variable 
+    # Iterate generation counter as global variable
     global current_generation
     current_generation += 1
 
@@ -88,9 +92,12 @@ def racecar_simulator(genomes, configurations):
         for iteration, agent in enumerate(agents):
             output = models[iteration].activate(agent.get_actions())
             choice = output.index(max(output))
-            # TODO: Explain how policy selection works here – how are choices selected
-            #       across our reinforcement learning agent? What do those choices
-            #       actually do for our game-playing bot? 
+            # Explain how policy selection works here – how are choices selected
+            # across our reinforcement learning agent? What do those choices
+            # actually do for our game-playing bot?
+            # This feeds how far the track walls are from the car in each direction into the learning algorithm
+            # Which then chooses the option with the highest value for the situation at hand
+            # It determines whether to turn left, turn right, speed up, or slow down
             if choice == 0:
                 agent.angle += 10
             elif choice == 1:
@@ -102,8 +109,9 @@ def racecar_simulator(genomes, configurations):
                 agent.speed += 2
 
         # Check if RL Agent is alive and optimize rewarding schema
-        # TODO: Explain how the rewards are selected here – how is the 
-        #       rewarding schema related to the model's training fitness?
+        # Explain how the rewards are selected here – how is the
+        # rewarding schema related to the model's training fitness?
+        # If the car is still alive, it gets a reward based on the distance it's covered
         still_alive = 0
         for iteration, agent in enumerate(agents):
             if agent.is_alive():
@@ -151,7 +159,7 @@ if __name__ == "__main__":
                                         neat.DefaultSpeciesSet,
                                         neat.DefaultStagnation,
                                         PATH_CONFIG)
-    
+
     population = neat.Population(configurations)
     population.add_reporter(neat.StdOutReporter(True))
     population_statistics = neat.StatisticsReporter()

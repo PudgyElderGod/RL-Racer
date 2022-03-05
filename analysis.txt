@@ -1,0 +1,6 @@
+The NEAT algorithm is a very interesting one and can find some impressive success,
+especially compared to older genetic algorithms that don't have the innovations of history tracking or minimal initial structure.
+Though for a racecar game such as this, I'd imagine a few algorithms could get similar results.
+A q-learning (such as a Hybrid Experience Replay) or free-hybrid (e.g. Soft Actor-Critic) algorithm might excel, given continuous state information of distance to the path border, speed, etc.
+I'm not sure if a model-based algorithm would do better, given the very limited number of actions and straightforward goal
+Especially with the nigh-infinite number of potential tracks, I think a model-free algorithm would by-and-large be more effective

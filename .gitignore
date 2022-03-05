@@ -2,6 +2,10 @@
 assets/environments/map04.png
 assets/environments/map05.png
 
+# Virtual environment
+env
+venv
+
 # GARBAGE
 .DS_Store
 */.DS_Store

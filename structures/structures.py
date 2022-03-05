@@ -1,8 +1,8 @@
 """
 TITLE:          structures.py
 DIRECTORY:      Reinforcement Racer project.
-DESCRIPTION:    Supplemental file containing necessary 
-                data structures for the completion of 
+DESCRIPTION:    Supplemental file containing necessary
+                data structures for the completion of
                 ACS 4511's Reinforcement Racer project.
 MUTABILITY:     This file contains challenges that must be
                 resolved for full project completion. (NOTE:
@@ -16,11 +16,11 @@ import os, sys, math, random
 import neat, pygame
 
 
-# TODO: Minimal comments are provided for this code in order to
-#       assess your capabilities in reverse-engineering and 
-#       understanding complex AI scripting. Write additional
-#       comments throughout this data structure file as needed
-#       to clarify both your and others' understandings.
+# Minimal comments are provided for this code in order to
+# assess your capabilities in reverse-engineering and
+# understanding complex AI scripting. Write additional
+# comments throughout this data structure file as needed
+# to clarify both your and others' understandings.
 
 class CarAgent:
     """ Custom self-driving car object for reinforcement learning. """
@@ -78,41 +78,46 @@ class CarAgent:
 
     def __update_coordinates__(self, degree, length):
         """ Helper method to calculate updated coordinates with deltas in X and Y. """
-        # TODO: Explain what the following three lines of code are doing.
-        #       What values are we trying to calculate and what impact does
-        #       that data have on our overall project?
+        # Explain what the following three lines of code are doing.
+        # What values are we trying to calculate and what impact does
+        # that data have on our overall project?
+        # This takes the direction and length of the distance traveled during a tick in both the X and Y axes
+        # and updates the position of the car accordingly
         dX = math.cos(math.radians(360 - (self.angle + degree))) * length
         dY = math.sin(math.radians(360 - (self.angle + degree))) * length
         return int(self.center[0] + dX), int(self.center[1] + dY)
 
     def __calculate_distance__(self, X, Y):
         """ Helper method to calculate Euclidean distance between original and updated coordinates. """
-        ΔX, ΔY = X - self.center[0], Y - self.center[1]
-        # TODO: Utilize the `math` repository and your understanding
-        #       of basic algebra to complete the Euclidean distance
-        #       function algorithm below. (HINT: It's the basic 
-        #       distance function you learn in algebra!)
-        return None
+        dX, dY = X - self.center[0], Y - self.center[1]
+        # Utilize the `math` repository and your understanding
+        # of basic algebra to complete the Euclidean distance
+        # function algorithm below. (HINT: It's the basic
+        # distance function you learn in algebra!)
+        return math.sqrt(dX**2 * dY**2)
 
     def check_radar(self, degree, environment):
         """ Major method to check and validate positions of car respective to track-path borders. """
         length = 0
 
         X, Y = self.__update_coordinates__(degree, length)
-      
+
+        # Send a radar out to the path border (or 300 pixels out, whichever comes first)
         while not environment.get_at((X, Y)) == self.border_color and length < 300:
             length += 1
 
             X, Y = self.__update_coordinates__(degree, length)
-        
+
         distance = self.__calculate_distance__(X, Y)
         self.radars.append([(X, Y), distance])
 
     def __get_state__(self, length):
         """ Helper method to retrieve environment state data using simulation timesteps. """
-        # TODO: This is a deceptively complex algorithm at play. Explain
-        #       what information is being created and iterated across and 
-        #       why this matters for our reinforcement learning algorithm.
+        # This is a deceptively complex algorithm at play. Explain
+        # what information is being created and iterated across and
+        # why this matters for our reinforcement learning algorithm.
+        # Getting the position of the corners relative to the car itself
+        # This is important because corners are what detect collisions
         TOP_LEFT_OFFSET, TOP_RIGHT_OFFSET, BOTTOM_LEFT_OFFSET, BOTTOM_RIGHT_OFFSET = 30, 150, 210, 330
         corners = list()
         for offset in [TOP_LEFT_OFFSET, TOP_RIGHT_OFFSET, BOTTOM_LEFT_OFFSET, BOTTOM_RIGHT_OFFSET]:
@@ -122,50 +127,62 @@ class CarAgent:
 
     def play_game(self, environment):
         """ Major method to update car-environment positions with respective state data. """
+        # Set base speed
         if not self.speed_set:
             self.speed, self.speed_set = 20, True
-        
+
+        # Update angle and adjust X coordinate
         self.rotated_sprite = self.rotate_center(self.sprite, self.angle)
         self.position[0] += math.cos(math.radians(360 - self.angle)) * self.speed
         self.position[0] = max(self.position[0], 20)
         self.position[0] = min(self.position[0], self.environment_parameters["WIDTH"] - 120)
 
+        # Incrase distance
         self.distance += self.speed; self.time += 1
 
+        # Update Y coordinate
         self.position[1] += math.sin(math.radians(360 - self.angle)) * self.speed
         self.position[1] = max(self.position[1], 20)
         self.position[1] = min(self.position[1], self.environment_parameters["WIDTH"] - 120)
 
+        # Update center reference
         self.center = [int(self.position[0]) + self.agent_parameters["X"] / 2,
                        int(self.position[1]) + self.agent_parameters["Y"] / 2]
-        
+
+        # Find corners and detect if there's a collision
         length = 0.5 * self.agent_parameters["X"]
         self.corners = self.__get_state__(length)
 
         self.detect_collision(environment); self.radars.clear()
 
+        # Check the radar at different angles
         for window in range(-90, 120, 45):
             self.check_radar(window, environment)
 
     def get_actions(self):
         """ Major method to obtain state action data for playing racecar simulation. """
-        # TODO: Our `actions` object is a deceptively important data
-        #       structures. Explain what this object represents and 
-        #       how this data is interpreted/used by our learning algorithm.
+        # Our `actions` object is a deceptively important data
+        # structures. Explain what this object represents and
+        # how this data is interpreted/used by our learning algorithm.
+        # This checks the distance each radar goes out to determine how close to the track borders the car is
+        # This is then fed into the algorithm which makes a decision on how to proceed based on previous iterations
+        # The choice that is most likely to keep the agent alive is then (usually) chosen
         radars, actions = self.radars, [0, 0, 0, 0, 0]
         for iteration, radar in enumerate(radars):
             actions[iteration] = int(radar[1] / 30)
         return actions
-    
+
     def is_alive(self):
         """ Major method to manually check car survival status. """
         return self.alive
 
     def get_rewards(self):
         """ Major method to calculate reward schema. """
-        # TODO: Explain how our rewarding schema is expressly calculated.
-        # TODO: Are there any other/better ways of selecting rewards for
-        #       our reinforcement algorithm?
+        # Explain how our rewarding schema is expressly calculated.
+        # Are there any other/better ways of selecting rewards for
+        # our reinforcement algorithm?
+        # Rewards are based on distance traveled divided by a static value
+        # It might be better to incorporate time to give rewards based on speed
         return self.distance / (self.agent_parameters["X"] / 2)
 
     def rotate_center(self, image, angle):
